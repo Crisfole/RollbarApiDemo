@@ -12,7 +12,7 @@
         {{^accountName}}
           <div class='warning'>You cannot view Items without an account name entered</div>
         {{/if}}
-        <label>Account Name (from the URL) <input type='text' value='{{accountName}}'></label>
+        <label>Account Name (from the URL) <input type='text' value='{{accountName}}' placeholder='Account Name'></label>
       </div>
       <div>
         {{#accountAccessToken.length !=32}}
@@ -25,9 +25,9 @@
             {{projectError}}
           </div>
         {{/if}}
-        <label>Account Access Token <input type='text' value='{{accountAccessToken}}'></label>
+        <label>Account Access Token <input type='text' value='{{accountAccessToken}}' placeholder='Account Access Token'></label>
 	<div class='info'>
-	  Find from <a href='https://rollbar.com/https://rollbar.com/settings/accounts/{{accountName}}/access_tokens/'>Your Account Access Token Page</a>
+	  Find from <a target='_blank' {{#if accountName}}href='https://rollbar.com/settings/accounts/{{accountName}}/access_tokens/'{{/if}}>Your Account Access Token Page</a>
 	</div>
       </div>
       <div>
@@ -36,6 +36,9 @@
           <li><label>{{name}} <input type='checkbox' checked='{{.showProject}}'/></label></li>
         {{/projects}}
         </ul>
+      </div>
+      <div>
+        <label>Search Query <input type='text' value='{{query}}' placeholder='Search query'/></label>
       </div>
       <div>
         {{#projects}}
@@ -59,8 +62,9 @@
       window.ractive = new Ractive({ el: '#app',
         template: '#app-template',
         data: {
-          accountName: "MY_ACCOUNT_HERE",
-          accountAccessToken: "ACCOUNT ACCESS TOKEN",
+          accountName: "",
+          accountAccessToken: "",
+          query: "",
           projects: [],
         },
         oninit: function() {
@@ -111,16 +115,21 @@
           var self = this;
           $.getJSON(endpoint + 'project/' + project.id + '/access_tokens?access_token=' + token)
             .then(function (results) {
-              project.accessToken = results.result.find(function(x) {
+              var token = results.result.find(function(x) {
                 return x.name == 'read';
-              }).access_token;
+              });
+              project.accessToken = token && token.access_token;
               self.update();
             });
         },
-        fetchItems: function(project) {
-          var self = this;
+        fetchItems: function(project, query) {
+          var self = this,
+            url = endpoint + "items/?access_token=" + project.accessToken;
           project.loading = true;
-          $.getJSON(endpoint + "items/?access_token=" + project.accessToken)
+          if (query) {
+            url = url + '&query=' + encodeURIComponent(query)
+          }
+          $.getJSON()
             .then(function(results) {
               project.items = results.result.items;
               project.loading = false;
